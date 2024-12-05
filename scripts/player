@@ -1,0 +1,18 @@
+[Unit]
+Description=Player Service
+After=multi-user.target graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/radio_exea/
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/radio_exea/main.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
