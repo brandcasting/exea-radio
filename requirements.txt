@@ -5,3 +5,4 @@ rich
 requests
 RPi.GPIO
 apscheduler
+python-socketio
