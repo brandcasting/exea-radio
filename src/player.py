@@ -9,12 +9,16 @@ import vlc
 from src.utils.lcd import LCD
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
+import socketio
 
 
 class Player():
   def __init__(self):
     self.config = Config().getConfig()
     self.lcd = LCD()
+    self.sio = socketio.Client()
+    self.sio.connect(self.config['api'], wait_timeout=5)
+    self.sio.on("notification_transmission", self.on_notification_transmission)
     pygame.init()
     pygame.mixer.init()
     pygame.mixer.music.set_endevent(pygame.USEREVENT)
@@ -79,7 +83,14 @@ class Player():
         self.player.set_media(media)
         self.player.play()
         conection.logSong(response['response'], self.config)
-        self.lcd.showMessageCustom("Song:" + song['title'] )
+        self.sio.emit("statusPointofsale", {
+          'pos': int(self.config['pos']),
+          'idClient': self.sio.sid,
+          'status': True,
+          'label': self.config['user'],
+          'client_pos': self.config['client_id'],
+        })
+        self.lcd.showMessageCustom("Song:" + song['title'])
         while True:
           state = self.player.get_state()
           if state == vlc.State.Ended:
@@ -121,4 +132,26 @@ class Player():
       state = self.player.get_state()
       if state == vlc.State.Ended:
         """ self.initPlayer() """
-    
+  
+  def on_notification_transmission(self, data):
+    self.lcd.showIp()
+    conection = ConectionService()
+    self.player.stop()
+    media = vlc.Media(data['url_song'])
+    self.player.set_media(media)
+    self.player.play()
+    song = {
+      "song": {
+        "title": data['title'],
+        "artist": data['author'],
+        "id": data['song_id']
+      },
+      "ruleId": 0,
+      "name": "Botonera"
+    }
+    conection.logSong(song, self.config)
+    self.lcd.showMessageCustom("Botonera - Song:" + data['title'])
+    while True:
+      state = self.player.get_state()
+      if state == vlc.State.Ended:
+        return self.initPlayer() 
