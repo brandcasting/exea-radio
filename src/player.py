@@ -47,10 +47,12 @@ class Player():
       for file in folder:
         media = vlc.Media(file)
         self.player.set_media(media)
+        self.lcd.showNotInternet()
         try:
           self.player.play()
+          self.lcd.showMessageCustom('Song: backup')
         except Exception:
-          print('Error')
+          self.lcd.showMessageCustom('Error play song backup')
 
         while True:
           if self.player.get_state() == vlc.State.Ended:
@@ -58,7 +60,7 @@ class Player():
               return self.playerPointOfSale()
             break
         if file == folder[-1]:
-          self.initPlayer()
+          self.backupSong()
     else:
       self.lcd.showMessageCustom('Carpeta Backup Vacia')
     
