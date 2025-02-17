@@ -134,25 +134,28 @@ class Player():
         """ self.initPlayer() """
   
   def on_notification_transmission(self, data):
-    if str(data['point_of_sale']) == self.config['pos']:
+    currentData = json.loads(data)
+    print(currentData)
+    print(data)
+    if str(currentData['point_of_sale']) == self.config['pos']:
       self.lcd.showIp()
       conection = ConectionService()
       self.player.stop()
-      print(data['url_song'])
-      media = vlc.Media(data['url_song'])
+      print(currentData['url_song'])
+      media = vlc.Media(currentData['url_song'])
       self.player.set_media(media)
       self.player.play()
       song = {
         "song": {
-          "title": data['title'],
-          "artist": data['author'],
-          "id": data['song_id']
+          "title": currentData['title'],
+          "artist": currentData['author'],
+          "id": currentData['song_id']
         },
         "ruleId": 0,
         "name": "Botonera"
       }
       conection.logSong(song, self.config)
-      self.lcd.showMessageCustom("Botonera - Song:" + data['title'])
+      self.lcd.showMessageCustom("Botonera - Song:" + currentData['title'])
       while True:
         state = self.player.get_state()
         if state == vlc.State.Ended:
