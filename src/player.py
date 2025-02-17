@@ -134,7 +134,10 @@ class Player():
         """ self.initPlayer() """
   
   def on_notification_transmission(self, data):
-    print(data['point_of_sale'], self.config['pos'])
+    print(f"data['point_of_sale']: {repr(data['point_of_sale'])}")
+    print(f"self.config['pos']: {repr(self.config['pos'])}")
+    print(type(data['point_of_sale']), type(self.config['pos']))
+    print(repr(data['point_of_sale']), repr(self.config['pos']))
     if data['point_of_sale'] == self.config['pos']:
       self.lcd.showMessageCustom("Entra 1")
       self.lcd.showIp()
