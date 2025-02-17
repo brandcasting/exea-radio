@@ -135,6 +135,7 @@ class Player():
   
   def on_notification_transmission(self, data):
     if data['point_of_sale'] == self.config['pos']:
+      self.lcd.showMessageCustom("Entra 1")
       self.lcd.showIp()
       conection = ConectionService()
       self.player.stop()
@@ -155,4 +156,6 @@ class Player():
       while True:
         state = self.player.get_state()
         if state == vlc.State.Ended:
-          return self.initPlayer() 
+          return self.initPlayer()
+    else:
+      self.lcd.showMessageCustom("Entra 2")
