@@ -135,7 +135,7 @@ class Player():
   
   def on_notification_transmission(self, data):
     print(data['point_of_sale'], self.config['pos'])
-    if data['point_of_sale'] = self.config['pos']:
+    if data['point_of_sale'] == self.config['pos']:
       self.lcd.showMessageCustom("Entra 1")
       self.lcd.showIp()
       conection = ConectionService()
