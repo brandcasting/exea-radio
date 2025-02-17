@@ -3,6 +3,7 @@ import glob
 import os
 import requests
 import random
+import json
 from src.utils.config import Config
 from src.services.conectionService import ConectionService;
 import vlc
