@@ -79,6 +79,7 @@ class Player():
           self.rulesByHours(response['response']['rules_hours'])
         self.player.stop()
         song = response['response']['song']
+        print(song['url'])
         media = vlc.Media(song['url'])
         self.player.set_media(media)
         self.player.play()
@@ -134,7 +135,7 @@ class Player():
         """ self.initPlayer() """
   
   def on_notification_transmission(self, data):
-    print(data)
+    print(data['url_song'])
     if str(data['point_of_sale']) == self.config['pos']:
       self.lcd.showIp()
       conection = ConectionService()
