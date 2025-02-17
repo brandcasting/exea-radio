@@ -138,6 +138,7 @@ class Player():
       self.lcd.showIp()
       conection = ConectionService()
       self.player.stop()
+      print(data['url_song'])
       media = vlc.Media(data['url_song'])
       self.player.set_media(media)
       self.player.play()
