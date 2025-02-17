@@ -134,12 +134,7 @@ class Player():
         """ self.initPlayer() """
   
   def on_notification_transmission(self, data):
-    print(f"data['point_of_sale']: {repr(data['point_of_sale'])}")
-    print(f"self.config['pos']: {repr(self.config['pos'])}")
-    print(type(data['point_of_sale']), type(self.config['pos']))
-    print(repr(data['point_of_sale']), repr(self.config['pos']))
-    if data['point_of_sale'] == self.config['pos']:
-      self.lcd.showMessageCustom("Entra 1")
+    if str(data['point_of_sale']) == self.config['pos']:
       self.lcd.showIp()
       conection = ConectionService()
       self.player.stop()
@@ -161,5 +156,3 @@ class Player():
         state = self.player.get_state()
         if state == vlc.State.Ended:
           return self.initPlayer()
-    else:
-      self.lcd.showMessageCustom("Entra 2")
