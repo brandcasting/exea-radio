@@ -9,7 +9,7 @@ class Message:
       self.max_rows = 2  # Suponiendo que tu LCD tiene 2 filas
 
   def getChannel(self):
-    if platform.machine() == 'x86_64':
+    if platform.machine() == 'x86_64' or platform.machine() == 'arm64':
       from rich.console import Console
       return Console()
     else:
