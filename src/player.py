@@ -17,8 +17,6 @@ class Player():
     self.config = Config().getConfig()
     self.lcd = LCD()
     self.sio = socketio.Client()
-    self.sio.connect(self.config['api'], wait_timeout=5)
-    self.sio.on("notification_transmission", self.on_notification_transmission)
     pygame.init()
     pygame.mixer.init()
     pygame.mixer.music.set_endevent(pygame.USEREVENT)
@@ -39,6 +37,9 @@ class Player():
     try:
       response = requests.head("https://www.google.com", timeout=5)
       if response.status_code == 200:
+        if self.sio.connected == False:
+          self.sio.connect(self.config['api'], wait_timeout=5)
+          self.sio.on("notification_transmission", self.on_notification_transmission)
         return True
     except requests.ConnectionError:
       return False
