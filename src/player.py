@@ -156,4 +156,5 @@ class Player():
       while True:
         state = self.player.get_state()
         if state == vlc.State.Ended:
+          self.sio.emit("notification_transmission_end", data)
           return
