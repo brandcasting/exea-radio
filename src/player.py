@@ -38,7 +38,7 @@ class Player():
       response = requests.head("https://www.google.com", timeout=5)
       if response.status_code == 200:
         if self.sio.connected == False:
-          self.sio.connect(self.config['api'], wait_timeout=5)
+          self.sio.connect(self.config['api'], wait_timeout=20)
           self.sio.on("notification_transmission", self.on_notification_transmission)
         return True
     except requests.ConnectionError:
