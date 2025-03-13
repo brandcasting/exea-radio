@@ -16,7 +16,7 @@ class Player():
   def __init__(self):
     self.config = Config().getConfig()
     self.lcd = LCD()
-    self.sio = socketio.Client()
+    self.sio = socketio.Client(ssl_verify=False)
     pygame.init()
     pygame.mixer.init()
     pygame.mixer.music.set_endevent(pygame.USEREVENT)
