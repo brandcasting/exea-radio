@@ -103,17 +103,37 @@ class Player():
         self.backupSong()
 
   def rulesByHours(self, rules):
-    existing_jobs = {job.id for job in self.scheduler.get_jobs()}
     for rule in rules:
-      if (rules[rule]):
+      if rules[rule]:  # Validar que la regla existe
         for index, hour in enumerate(rules[rule]['hours']):
-          target_time = datetime.fromtimestamp(hour / 1000.0)
-          job_id = f"job_{rule}_{index}"
-          if self.scheduler.get_job(job_id):
-            self.scheduler.remove_job(job_id)
-          self.scheduler.add_job(self.songByTime, 'date', run_date=target_time, args=[rules[rule], rule], id=job_id)
-    if (self.scheduler.running == False):
-      self.scheduler.start()
+            target_time = datetime.fromtimestamp(hour / 1000.0)  # Convertir a datetime
+            
+            # **Evitar programar tareas en el pasado**
+            if target_time <= datetime.now():
+                print(f"Saltando tarea {rule}_{index}: la hora {target_time} ya pasó.")
+                continue
+
+            job_id = f"job_{rule}_{index}"
+
+            # **Solo eliminar trabajos si existen**
+            if job_id in existing_jobs:
+                self.scheduler.remove_job(job_id)
+                print(f"Reemplazando tarea existente {job_id}.")
+
+            # **Agregar la tarea con un tiempo de gracia**
+            self.scheduler.add_job(
+                self.songByTime, 
+                'date', 
+                run_date=target_time, 
+                args=[rules[rule], rule], 
+                id=job_id,
+                misfire_grace_time=3600  # Permite ejecutar con hasta 1 hora de retraso
+            )
+    
+    # **Asegurar que el scheduler esté en ejecución**
+    if not self.scheduler.running:
+        print("Iniciando APScheduler...")
+        self.scheduler.start()
     return True
 
   def songByTime(self, rule, id):
