@@ -103,6 +103,7 @@ class Player():
         self.backupSong()
 
   def rulesByHours(self, rules):
+    existing_jobs = {job.id for job in self.scheduler.get_jobs()}
     for rule in rules:
       if rules[rule]:  # Validar que la regla existe
         for index, hour in enumerate(rules[rule]['hours']):
