@@ -35,7 +35,7 @@ class Player():
   #Función para validar internet
   def checkConection(self):
     try:
-      response = requests.head("https://www.google.com", timeout=5)
+      response = requests.head(self.config['api'], timeout=5)
       if response.status_code == 200:
         if self.sio.connected == False:
           self.sio.connect(self.config['api'], wait_timeout=20)
