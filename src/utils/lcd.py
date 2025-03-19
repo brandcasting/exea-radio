@@ -1,9 +1,12 @@
 import socket
 from src.utils.message import Message
+import os
+from datetime import datetime
 
 class LCD:
   def __init__(self):
     self.message = Message()
+    self.log_file = os.path.join('logs', "app.log")
 
   @staticmethod
   def getIp():
@@ -25,6 +28,12 @@ class LCD:
 
   def showNotInternet(self):
     self.message.showMessage('Sin internet')
+    hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(self.log_file, "a") as file:  # "a" para añadir sin sobrescribir
+      file.write(f"[{hora_actual}] Sin internet.\n")
   
   def showMessageCustom(self, message):
     self.message.showMessage(message)
+    hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(self.log_file, "a") as file:  # "a" para añadir sin sobrescribir
+      file.write(f"[{hora_actual}] {message}.\n")
