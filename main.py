@@ -1,9 +1,7 @@
-import time
-
 from src.player import Player
-
+import threading
 
 if __name__ == "__main__":
     player = Player()
-    # Ruta de la canción que deseas reproducir
-    player.initPlayer()
+    player_thread = threading.Thread(target=player.player_loop)
+    player_thread.start()
