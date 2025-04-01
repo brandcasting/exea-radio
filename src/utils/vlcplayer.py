@@ -16,7 +16,6 @@ class VLCPlayer:
     self.lcd = LCD()
 
   def check_internet(self):
-    """ Verifica si hay conexión a internet intentando conectarse a Google. """
     try:
       requests.get("https://www.google.com", timeout=5)
       return True
@@ -36,17 +35,18 @@ class VLCPlayer:
     self.next_player.set_media(media)
     self.loading_next = True  # Indica que hay una canción pre-cargada
 
-  def switch_to_next(self, isOnline):
+  def switch_to_next(self):
     """ Cambia al reproductor precargado y lo inicia. """
     if self.loading_next:
       self.current_player.stop()
       self.current_player = self.next_player  # Cambia de reproductor
       self.current_player.play()
       self.lcd.showIp()
-      if isOnline:
-          message = "Song: "+ self.data['song']['title']
-      else:
-          message = "Song: Backup"
+      try:
+        message = "Song: "+ self.data['song']['title']
+        self.conection.logSong(self.data, self.config)
+      except Exception as e:
+        message = "Song: Backup"
       self.lcd.showMessageCustom(message)
       self.next_player = vlc.MediaPlayer()  # Crea un nuevo reproductor para la siguiente canción
       self.loading_next = False
