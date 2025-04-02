@@ -111,7 +111,6 @@ class Player():
             
             # **Evitar programar tareas en el pasado**
             if target_time <= datetime.now():
-                print(f"Saltando tarea {rule}_{index}: la hora {target_time} ya pasó.")
                 continue
 
             job_id = f"job_{rule}_{index}"
@@ -119,7 +118,6 @@ class Player():
             # **Solo eliminar trabajos si existen**
             if job_id in existing_jobs:
                 self.scheduler.remove_job(job_id)
-                print(f"Reemplazando tarea existente {job_id}.")
 
             # **Agregar la tarea con un tiempo de gracia**
             self.scheduler.add_job(
@@ -130,10 +128,7 @@ class Player():
                 id=job_id,
                 misfire_grace_time=3600  # Permite ejecutar con hasta 1 hora de retraso
             )
-    
-    # **Asegurar que el scheduler esté en ejecución**
     if not self.scheduler.running:
-        print("Iniciando APScheduler...")
         self.scheduler.start()
     return True
 

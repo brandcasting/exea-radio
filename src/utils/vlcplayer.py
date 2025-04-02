@@ -27,6 +27,10 @@ class VLCPlayer:
     media = vlc.Media(file)
     self.current_player.set_media(media)
     self.current_player.play()
+    while True:
+      state = self.current_player.get_state()
+      if state == vlc.State.Ended:
+        return True
 
   def preload_next(self, song, data):
     """ Precarga la siguiente canción en otro reproductor. """
@@ -50,3 +54,19 @@ class VLCPlayer:
       self.lcd.showMessageCustom(message)
       self.next_player = vlc.MediaPlayer()  # Crea un nuevo reproductor para la siguiente canción
       self.loading_next = False
+
+  def songByTime(self, rule, id):
+    response = self.conection.songByRule(rule['id'], self.config)
+    self.current_player.stop()
+    song = response['response']['song']
+    media = vlc.Media(song['url'])
+    self.current_player.set_media(media)
+    self.current_player.play()
+    response['response']['ruleId'] = id
+    response['response']['name'] = rule['name']
+    self.conection.logSong(response['response'], self.config)
+    self.lcd.showMessageCustom("Song exact time:" + song['title'] )
+    while True:
+      state = self.current_player.get_state()
+      if state == vlc.State.Ended:
+        """ self.initPlayer() """
