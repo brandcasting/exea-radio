@@ -20,8 +20,17 @@ class Player():
     self.lcd = LCD()
     self.sio = socketio.Client()
     self.scheduler = BackgroundScheduler(daemon=True)
+    self.pause_event = threading.Event()  # Evento para controlar la pausa
+    self.pause_event.set()
     if not self.scheduler.running:
       self.scheduler.start(paused=False)
+
+  def pause(self, resume_time_str):
+    self.lcd.showMessageCustom(f"Pausado hasta {resume_time_str}")
+    self.pause_event.clear()  # Bloquea el player_loop
+
+  def resume(self):
+    self.pause_event.set()
 
   def get_local_songs(self):
     return [os.path.join('./songs', f) for f in os.listdir('./songs') if f.endswith((".mp3", ".wav"))]
@@ -59,6 +68,7 @@ class Player():
 
       # Esperar a que termine la canción actual
       while vlc_player.current_player.is_playing():
+        self.pause_event.wait()
         time.sleep(1)
 
       # Cambiar al reproductor precargado
