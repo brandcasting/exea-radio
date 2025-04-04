@@ -46,9 +46,6 @@ if __name__ == "__main__":
 	player_thread = threading.Thread(target=player.player_loop, daemon=True)
 	player_thread.start()
 
-	hora_pausa = "20:10"
-	hora_reanudar = "21:45"
-
 	control_thread = threading.Thread(
 		target=schedule_pause_resume,
 		args=(player, config['pause_time'], config['resume_time']),

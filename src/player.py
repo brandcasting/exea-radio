@@ -26,6 +26,7 @@ class Player():
       self.scheduler.start(paused=False)
 
   def pause(self, resume_time_str):
+    self.lcd.showIp()
     self.lcd.showMessageCustom(f"Pausado hasta {resume_time_str}")
     self.pause_event.clear()  # Bloquea el player_loop
 
