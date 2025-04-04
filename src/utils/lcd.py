@@ -1,56 +1,39 @@
-import platform
-import time
-import threading
-import queue
+import socket
+from src.utils.message import Message
+import os
+from datetime import datetime
 
-class Message:
-    def __init__(self):
-        self.linux = True
-        self.channel = self.getChannel()
-        self.message_queue = queue.Queue()
-        self.display_thread = threading.Thread(target=self._process_messages, daemon=True)
-        self.display_thread.start()
-        
-        if not self.linux:
-            self.max_chars = 16  # ancho de la pantalla
-            self.max_rows = 2
-            self.current_row = 0
+class LCD:
+  def __init__(self):
+    self.message = Message()
+    self.log_file = os.path.join('logs', "app.log")
 
-    def getChannel(self):
-        if platform.machine() == 'x86_64' or platform.machine() == 'arm64':
-            from rich.console import Console
-            return Console()
-        else:
-            from src.utils.GPIOlibrary import GPIOlibrary
-            self.linux = False
-            return GPIOlibrary()
+  @staticmethod
+  def getIp():
+    try:
+      s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+      s.connect(("8.8.8.8", 80))
+      ip_address = s.getsockname()[0]
+      s.close()
+      return ip_address
+    except Exception as e:
+        return False
+  def showIp(self):
+    ip = self.getIp()
+    if ip:
+      message = ip
+    else:
+      message = 'Error detectando'
+    self.message.showMessage(message)
 
-    def showMessage(self, message):
-        # Agrega el mensaje a la cola para ser mostrado
-        self.message_queue.put(message)
-
-    def _process_messages(self):
-        while True:
-            message = self.message_queue.get()  # Espera a que haya un mensaje
-            if self.linux:
-                self.channel.print(message, style="bold green")
-            else:
-                self.channel.begin(1, 2)
-                self.channel.setCursor(0, self.current_row)
-
-                if len(message) <= self.max_chars:
-                    self.channel.message(message.ljust(self.max_chars) + "\n")
-                    time.sleep(2)  # Espera un poco antes de mostrar el siguiente
-                else:
-                    full_message = message + " " * 4
-                    for i in range(len(full_message) - self.max_chars + 1):
-                        self.channel.setCursor(0, self.current_row)
-                        self.channel.message(full_message[i:i + self.max_chars] + "\n")
-                        time.sleep(0.3)  # Velocidad del scroll
-
-                self.current_row += 1
-                if self.current_row >= self.max_rows:
-                    self.current_row = 0
-                    self.channel.clear()
-
-            self.message_queue.task_done()
+  def showNotInternet(self):
+    self.message.showMessage('Sin internet')
+    hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(self.log_file, "a") as file:  # "a" para añadir sin sobrescribir
+      file.write(f"[{hora_actual}] Sin internet.\n")
+  
+  def showMessageCustom(self, message):
+    self.message.showMessage(message)
+    hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(self.log_file, "a") as file:  # "a" para añadir sin sobrescribir
+      file.write(f"[{hora_actual}] {message}.\n")
