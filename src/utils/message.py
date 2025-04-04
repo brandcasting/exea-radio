@@ -1,11 +1,13 @@
 import platform
+import time  # Para delays en el scroll
 
 class Message:
     def __init__(self):
         self.linux = True
         self.channel = self.getChannel()
         if not self.linux:
-            self.max_rows = 2  # Suponiendo que tu LCD tiene 2 filas
+            self.max_rows = 2
+            self.max_cols = 16  # Asumiendo un display de 16x2
             self.channel.begin(1, 2)
 
     def getChannel(self):
@@ -18,25 +20,32 @@ class Message:
             return GPIOlibrary()
 
     def showMessageFirstRow(self, message):
-        """Muestra un mensaje en la primera fila de la pantalla."""
         if self.linux:
             self.channel.print(message, style="bold green")
         else:
             self.displayMessage(message, 0)
 
     def showMessageSecondRow(self, message):
-        """Muestra un mensaje en la segunda fila de la pantalla."""
         if self.linux:
             self.channel.print(message, style="bold green")
         else:
             self.displayMessage(message, 1)
 
     def displayMessage(self, message, row):
-        """Método interno para manejar la lógica de impresión en una fila específica."""
-        truncated_message = self.truncateMessage(message, 16)
-        self.channel.setCursor(0, row)
-        self.channel.message(truncated_message + "\n")
+        if len(message) <= self.max_cols:
+            self.channel.setCursor(0, row)
+            self.channel.message(message.ljust(self.max_cols))
+        else:
+            self.scrollMessage(message, row)
+
+    def scrollMessage(self, message, row, delay=0.3, padding=4):
+        """Desplaza el mensaje horizontalmente si es más largo que la pantalla."""
+        scroll_text = message + " " * padding  # Espacio para hacer loop visualmente
+        for i in range(len(scroll_text) - self.max_cols + 1):
+            self.channel.setCursor(0, row)
+            part = scroll_text[i:i + self.max_cols]
+            self.channel.message(part)
+            time.sleep(delay)
 
     def truncateMessage(self, message, max_length):
-        """Trunca el mensaje si supera la longitud máxima permitida."""
         return message[:max_length - 3] + '...' if len(message) > max_length else message
