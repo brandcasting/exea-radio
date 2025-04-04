@@ -39,4 +39,4 @@ class Message:
 
     def truncateMessage(self, message, max_length):
         """Trunca el mensaje si supera la longitud máxima permitida."""
-        return message[:max_length - 3] + '...' if len(message) > max_length else message
+        return message[:max_length - 2] + '..' if len(message) > max_length else message

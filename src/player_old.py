@@ -55,7 +55,7 @@ class Player():
         self.lcd.showNotInternet()
         try:
           self.player.play()
-          self.lcd.showMessageCustom('Song: backup')
+          self.lcd.showMessageCustom('Song:Backup')
         except Exception:
           self.lcd.showMessageCustom('Error play song backup')
 

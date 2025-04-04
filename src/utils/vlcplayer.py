@@ -47,7 +47,7 @@ class VLCPlayer:
       self.current_player.play()
       self.lcd.showIp()
       try:
-        message = "Song: "+ self.data['song']['title']
+        message = "Song:"+ self.data['song']['title']
         self.conection.logSong(self.data, self.config)
       except Exception as e:
         message = "Song: Backup"
