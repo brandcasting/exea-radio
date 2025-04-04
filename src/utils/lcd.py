@@ -18,22 +18,20 @@ class LCD:
       return ip_address
     except Exception as e:
         return False
+
   def showIp(self):
     ip = self.getIp()
     if ip:
-      message = ip
+      message = f"{ip} Online"
     else:
-      message = 'Error detectando'
-    self.message.showMessage(message)
-
-  def showNotInternet(self):
-    self.message.showMessage('Sin internet')
+      message = 'Sin internet'
+    self.message.showMessageFirstRow(message)
     hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(self.log_file, "a") as file:  # "a" para añadir sin sobrescribir
-      file.write(f"[{hora_actual}] Sin internet.\n")
+      file.write(f"[{hora_actual}] {message}.\n")
   
   def showMessageCustom(self, message):
-    self.message.showMessage(message)
+    self.message.showMessageSecondRow(message)
     hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(self.log_file, "a") as file:  # "a" para añadir sin sobrescribir
       file.write(f"[{hora_actual}] {message}.\n")
