@@ -1,13 +1,17 @@
 import platform
-import time  # Para delays en el scroll
+import time
+import threading
 
 class Message:
     def __init__(self):
         self.linux = True
         self.channel = self.getChannel()
+        self.max_cols = 16
+        self.max_rows = 2
+        self.scroll_threads = [None, None]  # Uno por fila
+        self.scroll_flags = [False, False]  # Control de ejecución del scroll
+
         if not self.linux:
-            self.max_rows = 2
-            self.max_cols = 16  # Asumiendo un display de 16x2
             self.channel.begin(1, 2)
 
     def getChannel(self):
@@ -20,32 +24,45 @@ class Message:
             return GPIOlibrary()
 
     def showMessageFirstRow(self, message):
-        if self.linux:
-            self.channel.print(message, style="bold green")
-        else:
-            self.displayMessage(message, 0)
+        self.showMessage(message, 0)
 
     def showMessageSecondRow(self, message):
+        self.showMessage(message, 1)
+
+    def showMessage(self, message, row):
         if self.linux:
-            self.channel.print(message, style="bold green")
+            self.channel.print(f"Fila {row + 1}: {message}", style="bold green")
         else:
-            self.displayMessage(message, 1)
+            if len(message) <= self.max_cols:
+                self._stopScroll(row)  # Asegúrate de detener scroll anterior si hay
+                self.channel.setCursor(0, row)
+                self.channel.message(message.ljust(self.max_cols))
+            else:
+                self._startScrollThread(message, row)
 
-    def displayMessage(self, message, row):
-        if len(message) <= self.max_cols:
-            self.channel.setCursor(0, row)
-            self.channel.message(message.ljust(self.max_cols))
-        else:
-            self.scrollMessage(message, row)
+    def _startScrollThread(self, message, row, delay=0.3, padding=4):
+        self._stopScroll(row)  # Detenemos scroll anterior si existe
 
-    def scrollMessage(self, message, row, delay=0.3, padding=4):
-        """Desplaza el mensaje horizontalmente si es más largo que la pantalla."""
-        scroll_text = message + " " * padding  # Espacio para hacer loop visualmente
-        for i in range(len(scroll_text) - self.max_cols + 1):
-            self.channel.setCursor(0, row)
-            part = scroll_text[i:i + self.max_cols]
-            self.channel.message(part)
-            time.sleep(delay)
+        def scroll():
+            scroll_text = message + " " * padding
+            self.scroll_flags[row] = True
+            while self.scroll_flags[row]:
+                for i in range(len(scroll_text) - self.max_cols + 1):
+                    if not self.scroll_flags[row]:
+                        break
+                    part = scroll_text[i:i + self.max_cols]
+                    self.channel.setCursor(0, row)
+                    self.channel.message(part)
+                    time.sleep(delay)
 
-    def truncateMessage(self, message, max_length):
-        return message[:max_length - 3] + '...' if len(message) > max_length else message
+        thread = threading.Thread(target=scroll, daemon=True)
+        self.scroll_threads[row] = thread
+        thread.start()
+
+    def _stopScroll(self, row):
+        """Detiene el scroll en una fila específica."""
+        self.scroll_flags[row] = False
+        thread = self.scroll_threads[row]
+        if thread and thread.is_alive():
+            thread.join(timeout=0.1)
+        self.scroll_threads[row] = None
