@@ -8,8 +8,10 @@ class Message:
         self.channel = self.getChannel()
         self.max_cols = 16
         self.max_rows = 2
-        self.scroll_threads = [None, None]  # Uno por fila
-        self.scroll_flags = [False, False]  # Control de ejecución del scroll
+        self.scroll_threads = [None, None]
+        self.scroll_flags = [threading.Event(), threading.Event()]
+        self.scroll_locks = [threading.Lock(), threading.Lock()]
+        self.scroll_duration = 10  # Duración máxima del scroll en segundos
 
         if not self.linux:
             self.channel.begin(1, 2)
@@ -33,36 +35,44 @@ class Message:
         if self.linux:
             self.channel.print(f"Fila {row + 1}: {message}", style="bold green")
         else:
-            if len(message) <= self.max_cols:
-                self._stopScroll(row)  # Asegúrate de detener scroll anterior si hay
-                self.channel.setCursor(0, row)
-                self.channel.message(message.ljust(self.max_cols))
-            else:
-                self._startScrollThread(message, row)
+            with self.scroll_locks[row]:
+                self._stopScroll(row)
+
+                if len(message) <= self.max_cols:
+                    self.channel.setCursor(0, row)
+                    self.channel.message(message.ljust(self.max_cols))
+                else:
+                    self._startScrollThread(message, row)
 
     def _startScrollThread(self, message, row, delay=0.3, padding=4):
-        self._stopScroll(row)  # Detenemos scroll anterior si existe
+        self.scroll_flags[row].set()
 
         def scroll():
             scroll_text = message + " " * padding
-            self.scroll_flags[row] = True
-            while self.scroll_flags[row]:
+            start_time = time.time()
+
+            while self.scroll_flags[row].is_set():
                 for i in range(len(scroll_text) - self.max_cols + 1):
-                    if not self.scroll_flags[row]:
+                    if not self.scroll_flags[row].is_set():
                         break
                     part = scroll_text[i:i + self.max_cols]
-                    self.channel.setCursor(0, row)
-                    self.channel.message(part)
+                    with self.scroll_locks[row]:
+                        self.channel.setCursor(0, row)
+                        self.channel.message(part)
                     time.sleep(delay)
+
+                    # Detener después de X segundos
+                    if time.time() - start_time > self.scroll_duration:
+                        self.scroll_flags[row].clear()
+                        break
 
         thread = threading.Thread(target=scroll, daemon=True)
         self.scroll_threads[row] = thread
         thread.start()
 
     def _stopScroll(self, row):
-        """Detiene el scroll en una fila específica."""
-        self.scroll_flags[row] = False
+        self.scroll_flags[row].clear()
         thread = self.scroll_threads[row]
         if thread and thread.is_alive():
-            thread.join(timeout=0.1)
+            thread.join(timeout=0.2)
         self.scroll_threads[row] = None
