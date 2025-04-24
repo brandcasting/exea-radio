@@ -43,6 +43,7 @@ class Player():
     while True:
       # Verifica si hay internet
       data = self.fetch_next_song(vlc_player)
+      print(data)
 
       if data:
         if (data['rules_hours']):
