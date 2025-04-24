@@ -79,12 +79,14 @@ class Player():
     """ Llama a la API para obtener la siguiente canción. """
     try:
       response = self.conection.getNext(self.config)
+      print(response)
       if(response['code'] == 200):
         if self.sio.connected == False:
           self.sio.connect(self.config['api'], wait_timeout=5)
           self.sio.on("notification_transmission", functools.partial(self.on_notification_transmission, vlc_player))
         return response['response']
     except requests.RequestException as e:
+      print(e)
       return False
     return False
   
