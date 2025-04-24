@@ -33,7 +33,6 @@ class ConectionService:
     }
     jsonResponse = post(endpoint, data=dumps(fromObject), headers = Headers, timeout=5)
     response = loads(jsonResponse.text)
-    print(response)
     return response
   
   def songByRule(self, id, config):

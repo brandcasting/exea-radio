@@ -47,10 +47,11 @@ class VLCPlayer:
       self.current_player.play()
       self.lcd.showIp()
       try:
+        print("DEBUG: self.data =", self.data)
         message = "Song:"+ self.data['song']['title']
         self.conection.logSong(self.data, self.config)
       except Exception as e:
-        print(e)
+        print("ERROR:", e)
         message = "Song: Backup"
       self.lcd.showMessageCustom(message)
       self.next_player = vlc.MediaPlayer()  # Crea un nuevo reproductor para la siguiente canción
