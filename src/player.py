@@ -84,7 +84,7 @@ class Player():
           self.sio.connect(self.config['api'], wait_timeout=5)
           self.sio.on("notification_transmission", functools.partial(self.on_notification_transmission, vlc_player))
         return response['response']
-    except requests.RequestException as e:
+    except Exception:
       return False
     return False
   
