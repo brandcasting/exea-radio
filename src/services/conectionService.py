@@ -12,6 +12,7 @@ class ConectionService:
     }
     endpoint = config['api'] + "/rules?pos=" + config['pos']
     jsonResponse = get(endpoint, headers = Headers, timeout=5)
+    print(jsonResponse)
     response = loads(jsonResponse.text)
     return response
   
