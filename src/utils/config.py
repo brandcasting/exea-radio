@@ -13,6 +13,7 @@ class Config:
        'user': config.get('PLAYER', 'USER_PLAYER'),
        'pos': config.get('PLAYER', 'POS_PLAYER'),
        'cms': config.get('PLAYER', 'API_CMS'),
+       'apiS3': config.get('PLAYER', 'APIS3'),
        'client_id': config.get('PLAYER', 'CLIENT_ID'),
        'pause_time': config.get('PLAYER', 'PAUSE_TIME'),
        'resume_time': config.get('PLAYER', 'RESUME_TIME'),

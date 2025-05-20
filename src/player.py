@@ -12,6 +12,7 @@ import socketio
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 import functools
+import re
 
 class Player():
   def __init__(self):
@@ -47,7 +48,8 @@ class Player():
       if data:
         if (data['rules_hours']):
           self.rulesByHours(data['rules_hours'], vlc_player)
-        next_song = data['song']['url']
+        new_url = re.sub(r'https://monitor-(dev|prod)\.s3\.us-east-005\.backblazeb2\.com', self.config['apiS3'], data['song']['url'])
+        next_song =  new_url
         self.sio.emit("statusPointofsale", {
           'pos': int(self.config['pos']),
           'idClient': self.sio.sid,
@@ -79,14 +81,12 @@ class Player():
     """ Llama a la API para obtener la siguiente canción. """
     try:
       response = self.conection.getNext(self.config)
-      print(response)
       if(response['code'] == 200):
         if self.sio.connected == False:
           self.sio.connect(self.config['api'], wait_timeout=5)
           self.sio.on("notification_transmission", functools.partial(self.on_notification_transmission, vlc_player))
         return response['response']
     except Exception as e:
-      print(e)
       return False
     return False
   
