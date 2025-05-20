@@ -43,7 +43,6 @@ class Player():
     while True:
       # Verifica si hay internet
       data = self.fetch_next_song(vlc_player)
-      print(data)
 
       if data:
         if (data['rules_hours']):
@@ -80,6 +79,7 @@ class Player():
     """ Llama a la API para obtener la siguiente canción. """
     try:
       response = self.conection.getNext(self.config)
+      print(response)
       if(response['code'] == 200):
         if self.sio.connected == False:
           self.sio.connect(self.config['api'], wait_timeout=5)
