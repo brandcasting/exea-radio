@@ -31,7 +31,10 @@ class ConectionService:
       "Content-Type" : "application/json",
       "X-USER-TOKEN" : user
     }
+    print(fromObject)
+    print(config)
     jsonResponse = post(endpoint, data=dumps(fromObject), headers = Headers, timeout=5)
+    print(jsonResponse)
     response = loads(jsonResponse.text)
     return response
   
