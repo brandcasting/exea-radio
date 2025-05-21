@@ -12,7 +12,7 @@ import socketio
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 import functools
-import re
+import urllib.parse
 
 class Player():
   def __init__(self):
@@ -48,8 +48,9 @@ class Player():
       if data:
         if (data['rules_hours']):
           self.rulesByHours(data['rules_hours'], vlc_player)
-        new_url = re.sub(r'https://monitor-(dev|prod)\.s3\.us-east-005\.backblazeb2\.com', self.config['apiS3'], data['song']['url'])
-        next_song =  new_url
+        """ next_song = self.config['apiS3'] + "/s3fs-public"+ quote(data['song']['uri']) """
+        next_song = urllib.parse.quote(self.config['apiS3'] +"/s3fs-public" + data['song']['uri'], safe=':/')
+        print(next_song)
         self.sio.emit("statusPointofsale", {
           'pos': int(self.config['pos']),
           'idClient': self.sio.sid,
