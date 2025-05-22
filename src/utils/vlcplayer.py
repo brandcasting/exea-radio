@@ -3,6 +3,7 @@ from src.services.conectionService import ConectionService
 from src.utils.config import Config
 from src.utils.lcd import LCD
 import requests
+import tempfile
 
 class VLCPlayer:
   def __init__(self):
@@ -35,7 +36,8 @@ class VLCPlayer:
   def preload_next(self, song, data):
     """ Precarga la siguiente canción en otro reproductor. """
     self.data = data
-    media = vlc.Media(song)
+    temp_file = self.stream_to_vlc(song)
+    media = vlc.Media(temp_file)
     self.next_player.set_media(media)
     self.loading_next = True  # Indica que hay una canción pre-cargada
 
@@ -70,3 +72,12 @@ class VLCPlayer:
       state = self.current_player.get_state()
       if state == vlc.State.Ended:
         """ self.initPlayer() """
+
+  def stream_to_vlc(self, url):
+    r = requests.get(url, stream=True)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+        f.flush()
+        return f.name
