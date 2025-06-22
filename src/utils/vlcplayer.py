@@ -2,6 +2,7 @@ import vlc
 from src.services.conectionService import ConectionService
 from src.utils.config import Config
 from src.utils.lcd import LCD
+import threading
 import requests
 
 class VLCPlayer:
@@ -13,6 +14,7 @@ class VLCPlayer:
     self.data = False
     self.loading_next = False
     self.next_song_url = None  # Guarda la URL de la siguiente canción
+    self.lock = threading.Lock()
     self.lcd = LCD()
 
   def check_internet(self):
@@ -21,16 +23,34 @@ class VLCPlayer:
       return True
     except requests.RequestException:
       return False
+    
+  def wait_until_playing(self, player, timeout=10):
+    """ Espera hasta que el reproductor entre en estado Playing o se agote el tiempo. """
+    import time
+    start = time.time()
+    while time.time() - start < timeout:
+        state = player.get_state()
+        if state == vlc.State.Playing:
+            return True
+        elif state in (vlc.State.Error, vlc.State.Ended):
+            return False
+        time.sleep(2)
+    return False
 
   def play(self, file):
     """ Reproduce una canción en el reproductor actual. """
-    media = vlc.Media(file)
-    self.current_player.set_media(media)
-    self.current_player.play()
-    while True:
-      state = self.current_player.get_state()
-      if state == vlc.State.Ended:
-        return True
+    with self.lock:
+      media = vlc.Media(file)
+      self.current_player.set_media(media)
+      self.current_player.play()
+      if not self.wait_until_playing(self.current_player):
+          print("Error: la canción no pudo reproducirse.")
+          return False
+      while True:
+          state = self.current_player.get_state()
+          if state == vlc.State.Ended:
+              return True
+
 
   def preload_next(self, song, data):
     """ Precarga la siguiente canción en otro reproductor. """
@@ -40,33 +60,37 @@ class VLCPlayer:
     self.loading_next = True  # Indica que hay una canción pre-cargada
 
   def switch_to_next(self):
-    """ Cambia al reproductor precargado y lo inicia. """
-    if self.loading_next:
-      self.current_player.stop()
-      self.current_player = self.next_player  # Cambia de reproductor
-      self.current_player.play()
-      self.lcd.showIp()
-      try:
-        message = "Song:"+ self.data['song']['title']
-        self.conection.logSong(self.data, self.config)
-      except Exception as e:
-        message = "Song: Backup"
-      self.lcd.showMessageCustom(message)
-      self.next_player = vlc.MediaPlayer()  # Crea un nuevo reproductor para la siguiente canción
-      self.loading_next = False
+    with self.lock:
+      if self.loading_next:
+        self.current_player.stop()
+        self.current_player = self.next_player
+        self.current_player.play()
+        self.wait_until_playing(self.current_player)
+        self.lcd.showIp()
+        try:
+            message = "Song:" + self.data['song']['title']
+            self.conection.logSong(self.data, self.config)
+        except Exception:
+            message = "Song: Backup"
+        self.lcd.showMessageCustom(message)
+        self.next_player = vlc.MediaPlayer()
+        self.loading_next = False
+
 
   def songByTime(self, rule, id):
-    response = self.conection.songByRule(rule['id'], self.config)
-    self.current_player.stop()
-    song = response['response']['song']
-    media = vlc.Media(song['url'])
-    self.current_player.set_media(media)
-    self.current_player.play()
-    response['response']['ruleId'] = id
-    response['response']['name'] = rule['name']
-    self.conection.logSong(response['response'], self.config)
-    self.lcd.showMessageCustom("Song exact time:" + song['title'] )
-    while True:
-      state = self.current_player.get_state()
-      if state == vlc.State.Ended:
-        """ self.initPlayer() """
+    with self.lock:
+      response = self.conection.songByRule(rule['id'], self.config)
+      self.current_player.stop()
+      song = response['response']['song']
+      media = vlc.Media(song['url'])
+      self.current_player.set_media(media)
+      self.current_player.play()
+      self.wait_until_playing(self.current_player)
+      response['response']['ruleId'] = id
+      response['response']['name'] = rule['name']
+      self.conection.logSong(response['response'], self.config)
+      self.lcd.showMessageCustom("Song exact time:" + song['title'])
+      while True:
+        state = self.current_player.get_state()
+        if state == vlc.State.Ended:
+          return

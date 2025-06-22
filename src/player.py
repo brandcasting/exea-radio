@@ -70,7 +70,6 @@ class Player():
       # Esperar a que termine la canción actual
       while vlc_player.current_player.is_playing():
         self.pause_event.wait()
-        time.sleep(3)
 
       # Cambiar al reproductor precargado
       vlc_player.switch_to_next()
