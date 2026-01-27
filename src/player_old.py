@@ -88,7 +88,7 @@ class Player():
           'pos': int(self.config['pos']),
           'idClient': self.sio.sid,
           'status': True,
-          'label': self.config['user'],
+          'label': self.config['label'],
           'client_pos': self.config['client_id'],
           'type': 'radio'
         })

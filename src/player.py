@@ -52,7 +52,7 @@ class Player():
           'pos': int(self.config['pos']),
           'idClient': self.sio.sid,
           'status': True,
-          'label': self.config['user'],
+          'label': self.config['label'],
           'client_pos': self.config['client_id'],
           'type': 'radio'
         })
@@ -71,7 +71,6 @@ class Player():
       # Esperar a que termine la canción actual
       while vlc_player.current_player.is_playing():
         self.pause_event.wait()
-        time.sleep(1)
 
       # Cambiar al reproductor precargado
       vlc_player.switch_to_next()
@@ -85,7 +84,7 @@ class Player():
           self.sio.connect(self.config['api'], wait_timeout=5)
           self.sio.on("notification_transmission", functools.partial(self.on_notification_transmission, vlc_player))
         return response['response']
-    except requests.RequestException as e:
+    except Exception as e:
       return False
     return False
   
