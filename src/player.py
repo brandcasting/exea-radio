@@ -54,6 +54,7 @@ class Player():
           'status': True,
           'label': self.config['user'],
           'client_pos': self.config['client_id'],
+          'type': 'radio'
         })
       else:
         next_song = local_songs[local_index] if local_songs else None
