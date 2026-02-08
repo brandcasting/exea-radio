@@ -23,7 +23,8 @@ class ConectionService:
       "song_id": int(song['song']['id']),
       "point_of_sale": int(config['pos']),
       "rule_id": int(song['ruleId']),
-      "name_rule": song['name']
+      "name_rule": song['name'],
+      "type": song['type'],
     }
     endpoint = config['api'] + "/rules";
     
