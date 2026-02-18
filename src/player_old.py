@@ -90,6 +90,7 @@ class Player():
           'status': True,
           'label': self.config['label'],
           'client_pos': self.config['client_id'],
+          'type': 'radio'
         })
         self.lcd.showMessageCustom("Song:" + song['title'])
         while True:
