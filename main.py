@@ -86,13 +86,14 @@ if __name__ == "__main__":
 	)
 	player_thread.start()
 
+	if config.get('pause_time') and config.get('resume_time'):
 	# Hilo que controla pausas y reanudaciones por horario
-	control_thread = threading.Thread(
-		target=schedule_pause_resume,
-		args=(player, config['pause_time'], config['resume_time']),
-		daemon=True
-	)
-	control_thread.start()
+		control_thread = threading.Thread(
+			target=schedule_pause_resume,
+			args=(player, config['pause_time'], config['resume_time']),
+			daemon=True
+		)
+		control_thread.start()
 
 	# Mantiene vivo el programa principal
 	try:
