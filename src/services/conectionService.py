@@ -39,11 +39,13 @@ class ConectionService:
   def songByRule(self, id, config):
     user = b64encode(config['user'].encode("ascii"))
     endpoint = config['cms'] + "/player/song/" + id;
+    print(endpoint)
     
     Headers = { 
       "Content-Type" : "application/json",
       "X-USER-TOKEN" : user
     }
+    print(Headers)
     jsonResponse = get(endpoint, headers = Headers)
     response = loads(jsonResponse.text)
     return response
