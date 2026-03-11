@@ -82,7 +82,6 @@ class VLCPlayer:
       response = self.conection.songByRule(rule['id'], self.config)
       self.current_player.stop()
       song = response['response']['song']
-      print(song)
       media = vlc.Media(song['url'])
       self.current_player.set_media(media)
       self.current_player.play()
