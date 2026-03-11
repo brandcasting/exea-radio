@@ -119,7 +119,8 @@ class Player():
           "id": data['song_id']
         },
         "ruleId": 0,
-        "name": "Botonera"
+        "name": "Botonera",
+        'type': 'botonera'
       }
       self.conection.logSong(song, self.config)
       self.lcd.showMessageCustom("Botonera - Song:" + data['title'])

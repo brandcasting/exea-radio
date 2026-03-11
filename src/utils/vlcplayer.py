@@ -88,6 +88,7 @@ class VLCPlayer:
       self.wait_until_playing(self.current_player)
       response['response']['ruleId'] = id
       response['response']['name'] = rule['name']
+      response['response']['type'] = 'rules_default'
       self.conection.logSong(response['response'], self.config)
       self.lcd.showMessageCustom("Song exact time:" + song['title'])
       while True:
