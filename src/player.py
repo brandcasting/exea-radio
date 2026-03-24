@@ -86,6 +86,7 @@ class Player():
           self.sio.on("notification_transmission", functools.partial(self.on_notification_transmission, vlc_player))
         return response['response']
     except Exception as e:
+      print(e)
       return False
     return False
   
