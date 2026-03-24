@@ -27,8 +27,10 @@ class Player():
   def initPlayer(self):
     #Valido si hay internet
     if self.checkConection():
+      print('uno')
       self.playerPointOfSale()
     else:
+      print('dos')
       #Suena el backup
       self.backupSong()
   
