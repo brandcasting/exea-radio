@@ -75,6 +75,7 @@ class Player():
     try:
       conection = ConectionService()
       response = conection.getNext(self.config)
+      print(response)
       if(response['code'] == 200):
         if (response['response']['rules_hours']):
           self.rulesByHours(response['response']['rules_hours'])
