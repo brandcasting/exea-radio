@@ -70,8 +70,9 @@ class VLCPlayer:
         try:
             message = "Song:" + self.data['song']['title']
             self.conection.logSong(self.data, self.config)
-        except Exception:
+        except Exception as e:
             message = "Song: Backup"
+            print("Error:", str(e))
         self.lcd.showMessageCustom(message)
         self.next_player = vlc.MediaPlayer()
         self.loading_next = False
