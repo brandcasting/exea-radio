@@ -12,6 +12,7 @@ class ConectionService:
     }
     endpoint = config['api'] + "/rules?pos=" + config['pos']
     jsonResponse = get(endpoint, headers = Headers, timeout=5)
+    jsonResponse.raise_for_status()
     response = loads(jsonResponse.text)
     return response
   
@@ -33,6 +34,7 @@ class ConectionService:
       "X-USER-TOKEN" : user
     }
     jsonResponse = post(endpoint, data=dumps(fromObject), headers = Headers, timeout=5)
+    jsonResponse.raise_for_status()
     response = loads(jsonResponse.text)
     return response
   
@@ -44,6 +46,7 @@ class ConectionService:
       "Content-Type" : "application/json",
       "X-USER-TOKEN" : user
     }
-    jsonResponse = get(endpoint, headers = Headers)
+    jsonResponse = get(endpoint, headers = Headers, timeout=5)
+    jsonResponse.raise_for_status()
     response = loads(jsonResponse.text)
     return response

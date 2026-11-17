@@ -42,7 +42,7 @@ apt-get install -y python3-vlc python3-dev python3-setuptools python3-pip i2c-to
 apt-get install -y python3-pygame
 
 echo "Installing dependencies"
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt --break-system-packages
 
 rc=$?
 if [[ $rc != 0 ]] ; then

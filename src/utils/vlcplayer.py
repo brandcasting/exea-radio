@@ -4,6 +4,7 @@ from src.utils.config import Config
 from src.utils.lcd import LCD
 import threading
 import requests
+import time
 
 class VLCPlayer:
   def __init__(self):
@@ -14,7 +15,9 @@ class VLCPlayer:
     self.data = False
     self.loading_next = False
     self.next_song_url = None  # Guarda la URL de la siguiente canción
-    self.lock = threading.Lock()
+    self.lock = threading.RLock()
+    self.special_lock = threading.Lock()
+    self.special_active = False
     self.lcd = LCD()
 
   def check_internet(self):
@@ -34,64 +37,113 @@ class VLCPlayer:
             return True
         elif state in (vlc.State.Error, vlc.State.Ended):
             return False
-        time.sleep(2)
+        time.sleep(0.2)
     return False
 
+  def wait_until_finished(self, player, max_buffer=35):
+    """Return ended/error/interrupted; never spin at full CPU."""
+    stalled_since = time.monotonic()
+    last_position = -1
+    while True:
+      with self.lock:
+        if self.current_player is not player:
+          return 'interrupted'
+        state = player.get_state()
+        position = player.get_time()
+      if state == vlc.State.Ended:
+        return 'ended'
+      if state == vlc.State.Error:
+        return 'error'
+      if position >= 0 and position > last_position:
+        last_position = position
+        stalled_since = time.monotonic()
+      if time.monotonic() - stalled_since > max_buffer:
+        return 'stalled'
+      time.sleep(0.2)
+
   def play(self, file):
-    """ Reproduce una canción en el reproductor actual. """
-    with self.lock:
-      media = vlc.Media(file)
-      self.current_player.set_media(media)
-      self.current_player.play()
-      if not self.wait_until_playing(self.current_player):
-          print("Error: la canción no pudo reproducirse.")
+    """Botonera: interrumpe música, luego devuelve control al ciclo normal."""
+    with self.special_lock:
+      with self.lock:
+        self.special_active = True
+        self.current_player.stop()
+        player = vlc.MediaPlayer()
+        self.current_player = player
+        player.set_media(vlc.Media(file))
+        player.play()
+      try:
+        if not self.wait_until_playing(player):
           return False
-      while True:
-          state = self.current_player.get_state()
-          if state == vlc.State.Ended:
-              return True
+        return self.wait_until_finished(player) == 'ended'
+      finally:
+        with self.lock:
+          player.stop()
+          self.special_active = False
 
 
   def preload_next(self, song, data):
     """ Precarga la siguiente canción en otro reproductor. """
-    self.data = data
-    media = vlc.Media(song)
-    self.next_player.set_media(media)
-    self.loading_next = True  # Indica que hay una canción pre-cargada
+    with self.lock:
+      self.data = data
+      media = vlc.Media(song)
+      self.next_player.set_media(media)
+      self.loading_next = True
 
   def switch_to_next(self):
     with self.lock:
-      if self.loading_next:
-        self.current_player.stop()
-        self.current_player = self.next_player
-        self.current_player.play()
-        self.wait_until_playing(self.current_player)
-        self.lcd.showIp()
-        try:
-            message = "Song:" + self.data['song']['title']
-            self.conection.logSong(self.data, self.config)
-        except Exception:
-            message = "Song: Backup"
-        self.lcd.showMessageCustom(message)
-        self.next_player = vlc.MediaPlayer()
-        self.loading_next = False
+      if not self.loading_next or self.special_active:
+        return False
+      self.current_player.stop()
+      candidate = self.next_player
+      self.current_player = candidate
+      song_data = self.data
+      self.next_player = vlc.MediaPlayer()
+      self.loading_next = False
+      candidate.play()
+    if not self.wait_until_playing(candidate, timeout=10):
+      with self.lock:
+        candidate.stop()
+      return False
+    with self.lock:
+      if self.current_player is not candidate or self.special_active:
+        return False
+    try:
+      self.lcd.showIp()
+      message = 'Song:' + song_data['song']['title'] if song_data else 'Song: Backup'
+      self.lcd.showMessageCustom(message)
+      if song_data:
+        self.conection.logSong(song_data, self.config)
+    except Exception as exc:
+      print('Aviso registrando canción:', exc, flush=True)
+    return True
 
 
   def songByTime(self, rule, id):
-    with self.lock:
-      response = self.conection.songByRule(rule['id'], self.config)
-      self.current_player.stop()
-      song = response['response']['song']
-      media = vlc.Media(song['url'])
-      self.current_player.set_media(media)
-      self.current_player.play()
-      self.wait_until_playing(self.current_player)
-      response['response']['ruleId'] = id
-      response['response']['name'] = rule['name']
-      response['response']['type'] = 'rules_default'
-      self.conection.logSong(response['response'], self.config)
-      self.lcd.showMessageCustom("Song exact time:" + song['title'])
-      while True:
-        state = self.current_player.get_state()
-        if state == vlc.State.Ended:
+    with self.special_lock:
+      try:
+        response = self.conection.songByRule(rule['id'], self.config)
+        song = response['response']['song']
+        with self.lock:
+          self.special_active = True
+          self.current_player.stop()
+          player = vlc.MediaPlayer()
+          self.current_player = player
+          player.set_media(vlc.Media(song['url']))
+          player.play()
+        if not self.wait_until_playing(player):
+          print('Error iniciando cuña programada', flush=True)
           return
+        response['response'].update(ruleId=id, name=rule['name'], type='rules_default')
+        try:
+          self.conection.logSong(response['response'], self.config)
+          self.lcd.showMessageCustom('Song exact time:' + song['title'])
+        except Exception as exc:
+          print('Aviso registrando cuña:', exc, flush=True)
+        self.wait_until_finished(player)
+      except Exception as exc:
+        print('Error en cuña programada:', exc, flush=True)
+      finally:
+        with self.lock:
+          if self.special_active:
+            self.current_player.stop()
+          self.special_active = False

@@ -34,46 +34,82 @@ class Player():
     self.pause_event.set()
 
   def get_local_songs(self):
-    return [os.path.join('./songs', f) for f in os.listdir('./songs') if f.endswith((".mp3", ".wav"))]
+    folder = '/home/pi/radio_exea/songs'
+    return sorted(os.path.join(folder, f) for f in os.listdir(folder)
+                  if f.lower().endswith((".mp3", ".wav")))
   
   def player_loop(self):
     vlc_player = VLCPlayer()
     local_songs = self.get_local_songs()
-    local_index = 0  # Para recorrer canciones locales
+    local_index = 0
     while True:
-      # Verifica si hay internet
+      self.pause_event.wait()
+      with vlc_player.lock:
+        special = vlc_player.special_active
+      if special:
+        time.sleep(0.2)
+        continue
+
       data = self.fetch_next_song(vlc_player)
+      if data:
+        try:
+          if data.get('rules_hours'):
+            self.rulesByHours(data['rules_hours'], vlc_player)
+          next_song = data['song']['url']
+        except (KeyError, TypeError) as exc:
+          print('Respuesta musical inválida:', exc, flush=True)
+          data = False
+        if data and self.sio.connected:
+          try:
+            self.sio.emit('statusPointofsale', {
+              'pos': int(self.config['pos']), 'idClient': self.sio.sid,
+              'status': True, 'label': self.config['label'],
+              'client_pos': self.config['client_id'], 'type': 'radio'})
+          except Exception as exc:
+            print('Aviso enviando estado:', exc, flush=True)
 
       if data:
-        if (data['rules_hours']):
-          self.rulesByHours(data['rules_hours'], vlc_player)
-        next_song = data['song']['url']
-        self.sio.emit("statusPointofsale", {
-          'pos': int(self.config['pos']),
-          'idClient': self.sio.sid,
-          'status': True,
-          'label': self.config['label'],
-          'client_pos': self.config['client_id'],
-          'type': 'radio'
-        })
-      else:
-        next_song = local_songs[local_index] if local_songs else None
-        local_index = (local_index + 1) % len(local_songs) if local_songs else 0
-        data = False
+        vlc_player.preload_next(next_song, data)
+        success = vlc_player.switch_to_next()
+        if success:
+          player = vlc_player.current_player
+          started_at = time.monotonic()
+          result = vlc_player.wait_until_finished(player)
+          # URLs que se cortan a los pocos segundos también son fallas.
+          if result == 'ended' and time.monotonic() - started_at >= 20:
+            continue
+          if result == 'interrupted':
+            continue
+          print('Fallo de canción online:', result, flush=True)
+        else:
+          print('Fallo al iniciar canción online; usando respaldo', flush=True)
 
-      if next_song:
-        preload_thread = threading.Thread(target=vlc_player.preload_next, args=(next_song, data))
-        preload_thread.start()
-      else:
-        self.lcd.showMessageCustom('No hay canciones disponibles en modo offline.')
-        return
-
-      # Esperar a que termine la canción actual
-      while vlc_player.current_player.is_playing():
+      # Una canción local completa antes de volver a consultar la API.
+      # Si falla un archivo local, probar otro (máximo 5 por ciclo).
+      if not local_songs:
+        print('ERROR: no hay canciones locales disponibles', flush=True)
+        time.sleep(10)
+        continue
+      for attempt in range(min(5, len(local_songs))):
         self.pause_event.wait()
-
-      # Cambiar al reproductor precargado
-      vlc_player.switch_to_next()
+        with vlc_player.lock:
+          if vlc_player.special_active:
+            break
+        backup = local_songs[local_index]
+        local_index = (local_index + 1) % len(local_songs)
+        vlc_player.preload_next(backup, False)
+        if not vlc_player.switch_to_next():
+          print('No inicia respaldo:', backup, flush=True)
+          continue
+        started_at = time.monotonic()
+        result = vlc_player.wait_until_finished(vlc_player.current_player)
+        if result == 'interrupted':
+          break
+        if result == 'ended' and time.monotonic() - started_at >= 20:
+          break
+        print('Respaldo falló:', result, backup, flush=True)
+      else:
+        time.sleep(5)
 
   def fetch_next_song(self, vlc_player):
     """ Llama a la API para obtener la siguiente canción. """
@@ -85,6 +121,7 @@ class Player():
           self.sio.on("notification_transmission", functools.partial(self.on_notification_transmission, vlc_player))
         return response['response']
     except Exception as e:
+      print('Error consultando API:', e, flush=True)
       return False
     return False
   
