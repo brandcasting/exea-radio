@@ -3,7 +3,6 @@
 from src.utils.vlcplayer import VLCPlayer
 import time
 import threading
-import requests
 from src.services.conectionService import ConectionService
 from src.utils.config import Config
 from src.utils.lcd import LCD
@@ -12,6 +11,7 @@ import socketio
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 import functools
+from urllib.parse import quote
 
 class Player():
   def __init__(self):
@@ -34,9 +34,10 @@ class Player():
     self.pause_event.set()
 
   def get_local_songs(self):
-    folder = '/home/pi/radio_exea/songs'
+    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'songs')
+    folder = os.path.abspath(folder)
     return sorted(os.path.join(folder, f) for f in os.listdir(folder)
-                  if f.lower().endswith((".mp3", ".wav")))
+      if f.lower().endswith((".mp3", ".wav")))
   
   def player_loop(self):
     vlc_player = VLCPlayer()
@@ -55,7 +56,11 @@ class Player():
         try:
           if data.get('rules_hours'):
             self.rulesByHours(data['rules_hours'], vlc_player)
-          next_song = data['song']['url']
+          uri_encoded = quote(data['song']['uri'], safe="~()*!.'-_")
+          next_song = data['url_media'] + '/s3fs-public' + uri_encoded
+          print(next_song)
+          print(data['song'])
+          print(data)
         except (KeyError, TypeError) as exc:
           print('Respuesta musical inválida:', exc, flush=True)
           data = False
